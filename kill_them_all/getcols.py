@@ -4,10 +4,31 @@
 # Use the sliders highlight the desired colors to track
 # Use `q` to quit and save the calibration
 
+from os.path import exists
+import numpy as np
+import signal
 import cv2
 import sys
-import numpy as np
 
+def save(*args):
+    # Save calibration to a file
+    with open('colors.csv', 'w') as f:
+        f.write(f'{hMin},{sMin},{vMin},{hMax},{sMax},{vMax}')
+    cv2.destroyAllWindows()
+    exit(0)
+
+signal.signal(signal.SIGINT, save)
+
+# Read config from colors.csv
+if exists('colors.csv'):
+    f = open('colors.csv').read()
+    cls = list(map(int, f.splitlines()[0].split(',')))
+    HMin = phMin = cls[0]
+    SMin = psMin = cls[1]
+    VMin = pvMin = cls[2]
+    HMax = phMax = cls[3]
+    SMax = psMax = cls[4]
+    VMax = pvMax = cls[5]
 
 def nothing(x): pass
 
@@ -24,15 +45,14 @@ cv2.createTrackbar('SMax', 'image', 0, 255, nothing)
 cv2.createTrackbar('VMax', 'image', 0, 255, nothing)
 
 # Set default value for MAX HSV trackbars.
-cv2.setTrackbarPos('HMax', 'image', 179)
-cv2.setTrackbarPos('SMax', 'image', 255)
-cv2.setTrackbarPos('VMax', 'image', 255)
+cv2.setTrackbarPos('HMin', 'image', HMin)
+cv2.setTrackbarPos('SMin', 'image', SMin)
+cv2.setTrackbarPos('VMin', 'image', VMin)
+cv2.setTrackbarPos('HMax', 'image', HMax)
+cv2.setTrackbarPos('SMax', 'image', SMax)
+cv2.setTrackbarPos('VMax', 'image', VMax)
 
-# Initialize to check if HSV min/max value changes
-hMin = sMin = vMin = hMax = sMax = vMax = 0
-phMin = psMin = pvMin = phMax = psMax = pvMax = 0
-
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(2)
 waitTime = 33
 
 while(1):
@@ -62,7 +82,7 @@ while(1):
 
     # Print if there is a change in HSV value
     if ((phMin != hMin) | (psMin != sMin) | (pvMin != vMin) | (phMax != hMax) | (psMax != sMax) | (pvMax != vMax)):
-        print(f'{hMin=}; {sMin=}; {vMin=}\n{hMax=}; {sMax=}; {vMax=}')
+        # print(f'{hMin=}; {sMin=}; {vMin=}\n{hMax=}; {sMax=}; {vMax=}')
         phMin = hMin
         psMin = sMin
         pvMin = vMin
@@ -75,10 +95,4 @@ while(1):
 
     if cv2.waitKey(1) == ord('q'):
         break
-
-# Save calibration to a file
-f = open('colors.csv', 'w')
-f.write(f'{hMin},{sMin},{vMin},{hMax},{sMax},{vMax}')
-f.close()
-
-cv2.destroyAllWindows()
+save()
