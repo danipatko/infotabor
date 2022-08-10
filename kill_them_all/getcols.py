@@ -23,6 +23,7 @@ signal.signal(signal.SIGINT, save)
 if exists('colors.csv'):
     f = open('colors.csv').read()
     cls = list(map(int, f.splitlines()[0].split(',')))
+    print(cls)
     HMin = phMin = cls[0]
     SMin = psMin = cls[1]
     VMin = pvMin = cls[2]
@@ -52,7 +53,7 @@ cv2.setTrackbarPos('HMax', 'image', HMax)
 cv2.setTrackbarPos('SMax', 'image', SMax)
 cv2.setTrackbarPos('VMax', 'image', VMax)
 
-cap = cv2.VideoCapture(2)
+cap = cv2.VideoCapture(0)
 waitTime = 33
 
 while(1):
