@@ -48,17 +48,6 @@ def get_center(frame):
         return None, frame
 
 
-# Get the direction to turn towards
-# Returns -1 left, 0 don't turn, 1 right
-def get_direction(object_x:int, center_x:int):
-    if object_x - center_x - OFFSET > 0:
-        return 1
-    elif object_x - center_x + OFFSET < 0:
-        return -1
-    else:
-        return 0
-
-
 # Open camera
 cap = cv2.VideoCapture(1)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
@@ -81,22 +70,15 @@ while True:
     # Target is picked up
     if center is not None:
         search = False
-        direction = get_direction(center[0], CENTER)
         
-        if direction == 0:
-            # Dash forward
-            client.move(100, 100)
-            time.sleep(3)
-            # Stop & continue searching
-            roland.motor(0, 0)
-            search = True
-        else:
-            # Turn towards target
-            roland.motor(direction * TURN_SPEED, -direction * TURN_SPEED)
-    
-    # Start searching (do not send move command every frame)
-    if search:
-        search = False
-        roland.motor(-TURN_SPEED, TURN_SPEED)
+        (x, y) = get_position(positions, frame)
+
+        speed_left = (x / FRAME_WIDTH * 100) * SPEED
+        speed_right = (100 - (x / FRAME_WIDTH * 100)) * SPEED
+
+        print(f'{x=} {y=} -> ({speed_left},{speed_right})')
+        roland.motor(speed_left, speed_right)
+    else:
+        roland.motor(0, 0)
 
 cv2.destroyAllWindows()

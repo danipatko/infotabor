@@ -25,4 +25,3 @@ s2.start(0)
 def look(yaw: float, pitch: float):
     s1.ChangeDutyCycle((90 - yaw) / 18 + 2)
     s2.ChangeDutyCycle((90 - pitch) / 18 + 2)
-

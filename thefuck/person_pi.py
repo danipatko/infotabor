@@ -26,7 +26,7 @@ CAMERA_WIDTH = 640
 CAMERA_HEIGHT = 480
 CENTER = CAMERA_WIDTH // 2
 OFFSET = 100
-SPEED = 20
+SPEED = 0.3
 
 class Part:
     r"""Enum of Detected Part IDs, for example, 0 is Nose"""
@@ -73,17 +73,14 @@ def process_image(interpreter, image, input_index):
     output_details = interpreter.get_output_details()
     # print(output_details)
 
-    output_data = np.squeeze(
-        interpreter.get_tensor(output_details[0]['index']))
-    offset_data = np.squeeze(
-        interpreter.get_tensor(output_details[1]['index']))
+    output_data = np.squeeze(interpreter.get_tensor(output_details[0]['index']))
+    offset_data = np.squeeze(interpreter.get_tensor(output_details[1]['index']))
 
     points = []
-
     total_row, total_col, total_points = output_data.shape
 
-    # totally 17 points
-    for k in range(total_points):
+    # totally 17 points, only legs are relevant: 9 -> 17
+    for k in range(9, total_points):
         max_score = output_data[0][0][k]
         max_row = 0
         max_col = 0
@@ -128,18 +125,23 @@ def get_position(positions, frame):
 
         sum_x += x
         sum_y += y
+    
+    res = (sum_x // len(positions), sum_y // len(positions))
+    
+    # cv2.circle(frame, res, 5, (255, 0, 0), 3)
+    # cv2.imshow('image', frame)
 
-    return (sum_x // len(positions), sum_y // len(positions))
+    return res
 
 
 if __name__ == "__main__":
 
     model_path = 'data/model.tflite'
-
     cap = cv2.VideoCapture(0)
+    # cv2.namedWindow('image')
+
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT)
-    cap.set(cv2.CAP_PROP_FPS, 15)
 
     interpreter = load_model(model_path)
     input_details = interpreter.get_input_details()
@@ -160,21 +162,22 @@ if __name__ == "__main__":
         image = image.resize((width, height))
 
         positions, conf = process_image(interpreter, image, input_index)
-        
-        if conf < 0.3:
+
+        if conf < 0.001:
             print('Not confident enough')
             # roland.motor(0, 0)
             continue
     
         x, y = get_position(positions, frame)
-        if x - CENTER - OFFSET > 0:
-            print('Turning right')
-            # roland.motor(SPEED, -SPEED)
-        elif x - CENTER + OFFSET < 0:
-            print('Turning left')
-            # roland.motor(-SPEED, SPEED)
-        else:
-            print('Moving forward')
-            # roland.motor(SPEED, SPEED)
+
+        speed_left = (x / CAMERA_WIDTH * 100) * SPEED
+        speed_right = (100 - (x / CAMERA_WIDTH * 100)) * SPEED
+
+        print(f'{x=} {y=} -> ({speed_left},{speed_right})')
+        # roland.motor(speed_left, speed_right)
+
+        key = cv2.waitKey(1)
+        if key == 27:  # esc
+            break
 
     cap.release()

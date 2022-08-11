@@ -6,18 +6,18 @@ import re
 import cv2
 import numpy as np
 import signal
+from client import Robot
+
+roland = Robot(host='192.168.1.127')
 
 import tensorflow.lite as tflite
 # import tflite_runtime.interpreter as tflite
-# import gpio as roland
 
 from PIL import Image
 
-# roland.init()
-
 def cleanup(*args):
-    # roland.motor(0, 0)
-    # roland.clean_up()
+    roland.stop()
+    roland.close()
     exit(0)
 
 signal.signal(signal.SIGINT, cleanup)
@@ -25,28 +25,7 @@ signal.signal(signal.SIGINT, cleanup)
 CAMERA_WIDTH = 640
 CAMERA_HEIGHT = 480
 CENTER = CAMERA_WIDTH // 2
-OFFSET = 100
-SPEED = 0.3
-
-class Part:
-    r"""Enum of Detected Part IDs, for example, 0 is Nose"""
-    NOSE = 0
-    LEFT_EYE = 1
-    RIGHT_EYE = 2
-    LEFT_EAR = 3
-    RIGHT_EAR = 4,
-    LEFT_SHOULDER = 5
-    RIGHT_SHOULDER = 6
-    LEFT_ELBOW = 7
-    RIGHT_ELBOW = 8
-    LEFT_WRIST = 9
-    RIGHT_WRIST = 10
-    LEFT_HIP = 11
-    RIGHT_HIP = 12
-    LEFT_KNEE = 13
-    RIGHT_KNEE = 14
-    LEFT_ANKLE = 15
-    RIGHT_ANKLE = 16
+SPEED = 0.8
 
 
 def sigmoid(x):
@@ -80,7 +59,7 @@ def process_image(interpreter, image, input_index):
     total_row, total_col, total_points = output_data.shape
 
     # totally 17 points, only legs are relevant: 9 -> 17
-    for k in range(9, total_points):
+    for k in range(0, total_points):
         max_score = output_data[0][0][k]
         max_row = 0
         max_col = 0
@@ -137,15 +116,12 @@ def get_position(positions, frame):
 if __name__ == "__main__":
 
     model_path = 'data/model.tflite'
-    cap = cv2.VideoCapture('/dev/stdin')
-    if not cap.isOpened():
-        print('Failed to get capture')
-        exit(1)
-    
+    cap = cv2.VideoCapture(2)
     cv2.namedWindow('image')
 
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT)
+    cap.set(cv2.CAP_PROP_FPS, 10) # Limit frame rate so the ws client does not crash
 
     interpreter = load_model(model_path)
     input_details = interpreter.get_input_details()
@@ -166,19 +142,19 @@ if __name__ == "__main__":
         image = image.resize((width, height))
 
         positions, conf = process_image(interpreter, image, input_index)
-        print(conf)
-        if conf < 0.001:
+
+        if conf < 0.05:
             print('Not confident enough')
-            # roland.motor(0, 0)
+            roland.stop()
             continue
     
-        x, y = get_position(positions, frame)
+        (x, y) = get_position(positions, frame)
 
         speed_left = (x / CAMERA_WIDTH * 100) * SPEED
         speed_right = (100 - (x / CAMERA_WIDTH * 100)) * SPEED
 
         print(f'{x=} {y=} -> ({speed_left},{speed_right})')
-        # roland.motor(speed_left, speed_right)
+        roland.move(speed_left, speed_right)
 
         key = cv2.waitKey(1)
         if key == 27:  # esc

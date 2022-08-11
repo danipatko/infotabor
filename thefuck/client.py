@@ -1,9 +1,10 @@
 #!/bin/env python
 
-from websocket import create_connection
+import websocket 
 
 def clamp(val:int, _min:int, _max:int):
-    return min(_min, max(_max, val))
+    val = round(val)
+    return _min if val < _min else _max if val > _max else val
 
 class Robot:
     port: int
@@ -12,7 +13,8 @@ class Robot:
     def __init__(self, host = 'localhost', port = 1111):
         self.host = host
         self.port = port
-        self.ws = create_connection(f'ws://{self.host}:{self.port}/ws')
+        self.ws = websocket.WebSocket()
+        self.ws.connect(f'ws://{self.host}:{self.port}/ws')
 
     # Close the websocket connection
     def close(self):
@@ -21,36 +23,44 @@ class Robot:
     # Set a pin to high or low, logic can be 0 or 1
     def pin(self, pin: int, logic: 0 | 1):
         self.ws.send(f'p {pin} {logic}')
+        self.ws.recv()
     
     # Configure a software pwm on a pin, hz is the frequency, and cycle is the duty cycle, a number between 0 and 100
     def pwm(self, pin: int, hz: int, cycle: int):
         self.ws.send(f'w {pin} {hz} {cycle}')
+        self.ws.recv()
     
     # Move the robot's left and right motors with the given speed
     def move(self, left: int, right: int):
         left = clamp(left, 0, 100)
         right = clamp(right, 0, 100)
+        print(f'm {left} {right}')
         self.ws.send(f'm {left} {right}')
+        self.ws.recv()
 
     # Stop the robot
     def stop(self):
         self.ws.send('s')
+        self.ws.recv()
     
     # Set the leds to the given color, r,g,b can be 0 or 1
     def led(self, rgb = [0,0,0]):
         for i in range(len(rgb)):
             rgb[i] = clamp(rgb[i], 0, 1)
         self.ws.send(f'l {rgb[0]} {rgb[1]} {rgb[2]}')
+        self.ws.recv()
 
     # Set the servo to the given absolute angle
     def servo(self, angle:int):
         angle = clamp(angle, -180, 180)
         self.ws.send(f'v {angle}')
+        self.ws.recv()
 
     # Sounds the buzzer at the given frequency
     def buzzer(self, freq: int):
         freq = clamp(freq, 0, 100)
         self.ws.send(f'b {freq}')
+        self.ws.recv()
 
     # Get the data from the four onboard sensors in four (0|1) numbers
     def sensors(self):
@@ -63,12 +73,3 @@ class Robot:
         self.stop()
         self.close()
 
-
-client = Robot()
-print('connected')
-client.move(10, 20)
-print('called move')
-client.stop()
-print('called stop')
-client.close()
-print('called close')
