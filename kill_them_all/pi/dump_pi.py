@@ -1,6 +1,5 @@
 import RPi.GPIO as GPIO
 import signal
-import time
 
 def cleanup(*args):
     GPIO.cleanup()
@@ -25,3 +24,44 @@ s2.start(0)
 def look(yaw: float, pitch: float):
     s1.ChangeDutyCycle((90 - yaw) / 18 + 2)
     s2.ChangeDutyCycle((90 - pitch) / 18 + 2)
+
+import RPi.GPIO as GPIO
+import time
+
+GPIO.setmode(GPIO.BOARD)
+
+for OUT_PIN in range(40):
+
+    try:
+        print(f'Trying pin {OUT_PIN}')
+        PULSE_FREQ = 50
+
+        print('Setting up')
+        GPIO.setup(OUT_PIN, GPIO.OUT)
+
+        print('Creating PWM')
+        s = GPIO.PWM(OUT_PIN, PULSE_FREQ)
+        print('Starting')
+        s.start(0)
+
+        def look(a: float): s.ChangeDutyCycle((90 - a) / 18 + 2)
+
+        print('look(0)')
+        look(0)
+        time.sleep(1)
+
+        print('look(45)')
+        look(45)
+        time.sleep(1)
+
+        print('Stopping')
+        s.stop()
+
+        print('\n')
+    except Exception as e:
+        print('\n\n--------------------')
+        print(e)
+        print('--------------------\n\n')
+
+print('Cleaning up')
+GPIO.cleanup()

@@ -11,7 +11,7 @@ cv2.namedWindow('image')
 # open webcam video stream
 cap = cv2.VideoCapture(0)
 
-while(True):
+while True:
     # Capture frame-by-frame
     ret, frame = cap.read()
 

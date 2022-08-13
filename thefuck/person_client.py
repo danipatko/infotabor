@@ -8,7 +8,7 @@ import numpy as np
 import signal
 from client import Robot
 
-roland = Robot(host='192.168.1.127')
+roland = Robot(host='192.168.20.126')
 
 import tensorflow.lite as tflite
 # import tflite_runtime.interpreter as tflite

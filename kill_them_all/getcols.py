@@ -53,8 +53,8 @@ cv2.setTrackbarPos('HMax', 'image', HMax)
 cv2.setTrackbarPos('SMax', 'image', SMax)
 cv2.setTrackbarPos('VMax', 'image', VMax)
 
-cap = cv2.VideoCapture(2)
-waitTime = 33
+cap = cv2.VideoCapture()
+cap.open('../pipes/anyad')
 
 while(1):
 
